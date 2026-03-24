@@ -13,8 +13,8 @@ You said manual GitHub/dashboard deploy (no Wrangler), so this repo is just plai
 ## What it does (v1)
 
 1. Indexer tick (`POST /indexer/tick`)
-   - scans signatures for FOMO program
-   - extracts probable signer wallets
+   - scans signatures for fee vault transfers
+   - extracts probable sender wallets
    - stores `wallet:<address>=1` in KV
 
 2. Query (`GET /query/:mint`)

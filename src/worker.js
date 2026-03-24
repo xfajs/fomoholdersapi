@@ -8,7 +8,7 @@ export default {
 
     // Optional manual trigger for debugging.
     if (url.pathname === '/indexer/tick' && request.method === 'POST') {
-      const out = await runIndexerTick(env, Number(url.searchParams.get('limit') || 25));
+      const out = await runIndexerTick(env, Number(url.searchParams.get('limit') || 50));
       return json(out);
     }
 
@@ -23,21 +23,20 @@ export default {
 
   async scheduled(event, env, ctx) {
     // Runs from Cloudflare Cron Triggers.
-    ctx.waitUntil(runIndexerTick(env, 25));
+    ctx.waitUntil(runIndexerTick(env, 50));
   },
 };
 
-const FOMO_PROGRAM_ID = 'DF1ow4tspfHX9JwWJsAb9epbkA8hmpSEAtxXy1V27QBH';
-const FEE_WALLET = 'HrTf9CzXR1dRH4Sof5QrpmGWwpwAf3qZzwCsEjQpXcSq';
+const FEE_VAULT = 'R4rNJHaffSUotNmqSKNEfDcJE8A7zJUkaoM5Jkd7cYX';
 
-async function runIndexerTick(env, limit = 25) {
-  // Reads signatures that touched the FOMO program and stores probable signer wallets in KV.
-  // Cursor is persisted in KV key: idx:fomo_program:before
-  const cursorKey = 'idx:fomo_program:before';
+async function runIndexerTick(env, limit = 50) {
+  // Reads signatures that touched the fee vault and stores probable sender wallets in KV.
+  // Cursor is persisted in KV key: idx:fee_vault:before
+  const cursorKey = 'idx:fee_vault:before';
   const before = await env.FOMO_KV.get(cursorKey);
 
   const sigs = await rpc(env, 'getSignaturesForAddress', [
-    FOMO_PROGRAM_ID,
+    FEE_VAULT,
     {
       limit,
       ...(before ? { before } : {}),
@@ -59,9 +58,6 @@ async function runIndexerTick(env, limit = 25) {
     const maybeSigner = accountKeys.find((k) => k?.signer)?.pubkey || accountKeys[0]?.pubkey || accountKeys[0];
     if (typeof maybeSigner === 'string') wallets.add(maybeSigner);
 
-    // Bonus: keep txs that reference fee wallet as extra confidence for FOMO fingerprints.
-    const mentionsFeeWallet = accountKeys.some((k) => (typeof k === 'string' ? k : k?.pubkey) === FEE_WALLET);
-    if (mentionsFeeWallet && typeof maybeSigner === 'string') wallets.add(maybeSigner);
   }
 
   // Write discovered wallets to KV as key-only flags.
