@@ -41,6 +41,7 @@ export default {
 
 const FEE_VAULT = 'R4rNJHaffSUotNmqSKNEfDcJE8A7zJUkaoM5Jkd7cYX';
 const FEE_TOKEN_ACCOUNT = 'HrTf9CzXR1dRH4Sof5QrpmGWwpwAf3qZzwCsEjQpXcSq';
+const FOMO_MEMO_ACCOUNT = 'jitodontfront1111111111111111111TradeonFomo';
 
 async function runIndexerTick(env, limit = 50) {
   // Reads signatures that touched the fee vault and stores probable sender wallets in KV.
@@ -68,6 +69,11 @@ async function runIndexerTick(env, limit = 50) {
 
   for (const tx of parsedTxs) {
     const transfers = tx?.tokenTransfers || [];
+    const accounts = (tx?.accountData || []).map((a) => a?.account).filter(Boolean);
+
+    // Extra guard so we only count true FOMO flow, not generic dFlow traffic.
+    const hasFomoMemoMarker = accounts.includes(FOMO_MEMO_ACCOUNT);
+    if (!hasFomoMemoMarker) continue;
 
     // Strict fee-vault fingerprint: sender wallet that paid into the FOMO fee vault.
     for (const tr of transfers) {
