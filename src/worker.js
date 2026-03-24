@@ -31,6 +31,16 @@ export default {
       }
     }
 
+    if (url.pathname.startsWith('/history/') && request.method === 'GET') {
+      try {
+        const mint = url.pathname.split('/').pop();
+        const out = await queryHistory(env, mint);
+        return json(out);
+      } catch (err) {
+        return json({ ok: false, where: 'history', error: String(err?.message || err) }, 500);
+      }
+    }
+
     if (url.pathname.startsWith('/query/') && request.method === 'GET') {
       try {
         const mint = url.pathname.split('/').pop();
@@ -139,6 +149,12 @@ async function health(env) {
   };
 }
 
+async function queryHistory(env, mint) {
+  if (!mint) return { ok: false, error: 'missing_mint' };
+  const points = (await env.FOMO_KV.get(`history:${mint}`, { type: 'json' })) || [];
+  return { ok: true, mint, points, count: points.length };
+}
+
 async function queryIsFomoWallet(env, wallet) {
   if (!wallet) return { ok: false, error: 'missing_wallet' };
 
@@ -243,6 +259,19 @@ async function queryFomoHoldersPct(env, mint) {
   };
 
   await env.FOMO_KV.put(cacheKey, JSON.stringify({ ...out, expiresAt: Date.now() + 60_000 }));
+
+  // Append mint history snapshot (for frontend chart)
+  const historyKey = `history:${mint}`;
+  const prev = (await env.FOMO_KV.get(historyKey, { type: 'json' })) || [];
+  const snapshot = {
+    t: out.updatedAt,
+    pctTotal: out.fomoPctTotalSupply,
+    pctTop: out.fomoPctTopHolders,
+    hits: out.fomoWalletHits,
+  };
+  const next = [...prev, snapshot].slice(-240);
+  await env.FOMO_KV.put(historyKey, JSON.stringify(next));
+
   return { ...out, cache: 'miss' };
 }
 

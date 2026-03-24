@@ -35,6 +35,22 @@ Response example:
 }
 ```
 
+## GET /history/:mint
+
+Returns stored chart points for this mint.
+
+Response example:
+```json
+{
+  "ok": true,
+  "mint": "...",
+  "count": 12,
+  "points": [
+    { "t": 1710000000000, "pctTotal": 1.2, "pctTop": 6.8, "hits": 4 }
+  ]
+}
+```
+
 ## GET /query/:mint
 
 Returns FOMO wallet concentration estimate based on top holders.
