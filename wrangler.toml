@@ -4,5 +4,5 @@ compatibility_date = "2026-03-24"
 
 [[kv_namespaces]]
 binding = "FOMO_KV"
-id = "REPLACE_WITH_PROD_KV_NAMESPACE_ID"
-preview_id = "REPLACE_WITH_PREVIEW_KV_NAMESPACE_ID"
+id = "ef8b174ff88944a0ab472b85ca24b1fe"
+preview_id = "ef8b174ff88944a0ab472b85ca24b1fe"
