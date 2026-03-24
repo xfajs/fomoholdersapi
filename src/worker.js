@@ -104,7 +104,6 @@ async function runIndexerTick(env, limit = 50) {
   const oldestSig = sigs[sigs.length - 1]?.signature;
   if (oldestSig) await env.FOMO_KV.put(cursorKey, oldestSig);
 
-  const now = Date.now();
   await env.FOMO_KV.put('meta:lastTickAt', String(now));
   await env.FOMO_KV.put(
     'meta:lastTickSummary',
