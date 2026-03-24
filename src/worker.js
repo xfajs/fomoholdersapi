@@ -186,18 +186,33 @@ async function queryFomoHoldersPct(env, mint) {
   // Intersect with indexed FOMO wallets set (KV key flags).
   const checks = await Promise.all(holderRows.map((h) => env.FOMO_KV.get(`wallet:${h.owner}`)));
 
+  // Aggregate token-account rows into owner-level rows for cleaner frontend display.
+  const ownerMap = new Map();
+
   let total = 0;
   let fomo = 0;
   const fomoOwners = [];
 
   for (let i = 0; i < holderRows.length; i++) {
     const row = holderRows[i];
+    const isFomo = !!checks[i];
+
     total += row.uiAmount;
-    if (checks[i]) {
+
+    const prev = ownerMap.get(row.owner) || { owner: row.owner, uiAmount: 0, isFomoWallet: false };
+    prev.uiAmount += row.uiAmount;
+    prev.isFomoWallet = prev.isFomoWallet || isFomo;
+    ownerMap.set(row.owner, prev);
+
+    if (isFomo) {
       fomo += row.uiAmount;
       fomoOwners.push(row.owner);
     }
   }
+
+  const holderList = [...ownerMap.values()]
+    .sort((a, b) => b.uiAmount - a.uiAmount)
+    .map((r, idx) => ({ rank: idx + 1, ...r }));
 
   const pctTop = total > 0 ? (fomo / total) * 100 : 0;
 
@@ -222,6 +237,7 @@ async function queryFomoHoldersPct(env, mint) {
     fomoPctTopHolders: pctTop,
     totalSupplyUi,
     fomoPctTotalSupply: pctTotalSupply,
+    holderList,
     indexCoverageHint: 'conservative_estimate_depends_on_index_warmth',
     updatedAt: Date.now(),
   };

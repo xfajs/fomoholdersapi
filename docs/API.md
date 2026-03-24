@@ -52,6 +52,9 @@ Response example:
   "fomoPctTopHolders": 12.5,
   "totalSupplyUi": 1000000000,
   "fomoPctTotalSupply": 1.23,
+  "holderList": [
+    { "rank": 1, "owner": "9x...", "uiAmount": 1234567.89, "isFomoWallet": true }
+  ],
   "indexCoverageHint": "conservative_estimate_depends_on_index_warmth",
   "updatedAt": 1710000000000,
   "cache": "miss"
