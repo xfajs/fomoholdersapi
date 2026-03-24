@@ -8,3 +8,5 @@ What it does:
 - Returns simple wallet membership check (`/query/wallet/:wallet`).
 
 This service powers the FOMO Holders frontend.
+
+Frontend repo: https://github.com/xfajs/fomoholders
