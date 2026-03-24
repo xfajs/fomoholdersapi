@@ -51,6 +51,19 @@ Response example:
 }
 ```
 
+## GET /token-info/:mint
+
+Proxy endpoint for pump coin metadata (frontend-safe, CORS-friendly).
+
+Response example:
+```json
+{
+  "ok": true,
+  "mint": "...",
+  "data": { "name": "...", "symbol": "..." }
+}
+```
+
 ## GET /query/:mint
 
 Returns FOMO wallet concentration estimate based on top holders.

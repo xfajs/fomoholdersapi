@@ -41,6 +41,16 @@ export default {
       }
     }
 
+    if (url.pathname.startsWith('/token-info/') && request.method === 'GET') {
+      try {
+        const mint = url.pathname.split('/').pop();
+        const out = await queryTokenInfo(mint);
+        return json(out);
+      } catch (err) {
+        return json({ ok: false, where: 'token_info', error: String(err?.message || err) }, 500);
+      }
+    }
+
     if (url.pathname.startsWith('/query/') && request.method === 'GET') {
       try {
         const mint = url.pathname.split('/').pop();
@@ -153,6 +163,17 @@ async function queryHistory(env, mint) {
   if (!mint) return { ok: false, error: 'missing_mint' };
   const points = (await env.FOMO_KV.get(`history:${mint}`, { type: 'json' })) || [];
   return { ok: true, mint, points, count: points.length };
+}
+
+async function queryTokenInfo(mint) {
+  if (!mint) return { ok: false, error: 'missing_mint' };
+  const res = await fetch(`https://frontend-api-v3.pump.fun/coins/${mint}`);
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`pump token info ${res.status}: ${text}`);
+  }
+  const data = await res.json();
+  return { ok: true, mint, data };
 }
 
 async function queryIsFomoWallet(env, wallet) {
