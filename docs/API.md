@@ -50,6 +50,8 @@ Response example:
   "fomoUiAmount": 123456.78,
   "totalUiAmountTopHolders": 987654.32,
   "fomoPctTopHolders": 12.5,
+  "totalSupplyUi": 1000000000,
+  "fomoPctTotalSupply": 1.23,
   "indexCoverageHint": "conservative_estimate_depends_on_index_warmth",
   "updatedAt": 1710000000000,
   "cache": "miss"

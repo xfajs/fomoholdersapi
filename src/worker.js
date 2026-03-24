@@ -171,7 +171,17 @@ async function queryFomoHoldersPct(env, mint) {
     }
   }
 
-  const pct = total > 0 ? (fomo / total) * 100 : 0;
+  const pctTop = total > 0 ? (fomo / total) * 100 : 0;
+
+  let totalSupplyUi = null;
+  let pctTotalSupply = null;
+  try {
+    const supply = await rpc(env, 'getTokenSupply', [mint]);
+    totalSupplyUi = Number(supply?.value?.uiAmount || 0);
+    pctTotalSupply = totalSupplyUi > 0 ? (fomo / totalSupplyUi) * 100 : 0;
+  } catch {
+    // keep null if supply lookup fails
+  }
 
   const out = {
     ok: true,
@@ -181,7 +191,9 @@ async function queryFomoHoldersPct(env, mint) {
     fomoWalletHits: [...new Set(fomoOwners)].length,
     fomoUiAmount: fomo,
     totalUiAmountTopHolders: total,
-    fomoPctTopHolders: pct,
+    fomoPctTopHolders: pctTop,
+    totalSupplyUi,
+    fomoPctTotalSupply: pctTotalSupply,
     indexCoverageHint: 'conservative_estimate_depends_on_index_warmth',
     updatedAt: Date.now(),
   };
