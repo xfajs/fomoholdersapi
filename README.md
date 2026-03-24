@@ -13,9 +13,9 @@ You said manual GitHub/dashboard deploy (no Wrangler), so this repo is just plai
 ## What it does (v1)
 
 1. Indexer tick (`POST /indexer/tick`)
-   - scans signatures for fee vault transfers
+   - scans signatures on the FOMO fee token account (`HrTf...`)
    - batch parses signatures through Helius `/v0/transactions`
-   - extracts probable sender/fee-payer wallets
+   - extracts sender wallets from USDC transfers into `HrTf...`
    - stores `wallet:<address>=1` in KV
 
 2. Query (`GET /query/:mint`)

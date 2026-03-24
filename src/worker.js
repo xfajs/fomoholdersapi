@@ -39,9 +39,8 @@ export default {
   },
 };
 
-const FEE_VAULT = 'R4rNJHaffSUotNmqSKNEfDcJE8A7zJUkaoM5Jkd7cYX';
 const FEE_TOKEN_ACCOUNT = 'HrTf9CzXR1dRH4Sof5QrpmGWwpwAf3qZzwCsEjQpXcSq';
-const FOMO_MEMO_ACCOUNT = 'jitodontfront1111111111111111111TradeonFomo';
+const USDC_MINT = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
 
 async function runIndexerTick(env, limit = 50) {
   // Reads signatures that touched the fee vault and stores probable sender wallets in KV.
@@ -50,7 +49,7 @@ async function runIndexerTick(env, limit = 50) {
   const before = await env.FOMO_KV.get(cursorKey);
 
   const sigs = await rpc(env, 'getSignaturesForAddress', [
-    FEE_VAULT,
+    FEE_TOKEN_ACCOUNT,
     {
       limit,
       ...(before ? { before } : {}),
@@ -69,16 +68,12 @@ async function runIndexerTick(env, limit = 50) {
 
   for (const tx of parsedTxs) {
     const transfers = tx?.tokenTransfers || [];
-    const accounts = (tx?.accountData || []).map((a) => a?.account).filter(Boolean);
 
-    // Extra guard so we only count true FOMO flow, not generic dFlow traffic.
-    const hasFomoMemoMarker = accounts.includes(FOMO_MEMO_ACCOUNT);
-    if (!hasFomoMemoMarker) continue;
-
-    // Strict fee-vault fingerprint: sender wallet that paid into the FOMO fee vault.
+    // Strict fingerprint: USDC transfer into FOMO fee token account.
     for (const tr of transfers) {
-      const goesToFeeVault = tr?.toUserAccount === FEE_VAULT || tr?.toTokenAccount === FEE_TOKEN_ACCOUNT;
-      if (goesToFeeVault && typeof tr?.fromUserAccount === 'string') {
+      const isUsdcFee = tr?.mint === USDC_MINT;
+      const goesToFeeTokenAccount = tr?.toTokenAccount === FEE_TOKEN_ACCOUNT;
+      if (isUsdcFee && goesToFeeTokenAccount && typeof tr?.fromUserAccount === 'string') {
         wallets.add(tr.fromUserAccount);
       }
     }
