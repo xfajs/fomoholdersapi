@@ -7,7 +7,8 @@ export default {
     }
 
     if (url.pathname === '/health') {
-      return json({ ok: true, service: 'fomoholdersapi' });
+      const out = await health(env);
+      return json(out);
     }
 
     // Optional manual trigger for debugging.
@@ -103,11 +104,39 @@ async function runIndexerTick(env, limit = 50) {
   const oldestSig = sigs[sigs.length - 1]?.signature;
   if (oldestSig) await env.FOMO_KV.put(cursorKey, oldestSig);
 
+  const now = Date.now();
+  await env.FOMO_KV.put('meta:lastTickAt', String(now));
+  await env.FOMO_KV.put(
+    'meta:lastTickSummary',
+    JSON.stringify({ indexed: sigs.length, walletsAdded: wallets.size, cursor: oldestSig || null, at: now }),
+  );
+
   return {
     ok: true,
     indexed: sigs.length,
     walletsAdded: wallets.size,
     cursor: oldestSig || null,
+  };
+}
+
+async function health(env) {
+  const [cursor, lastTickAtRaw, lastTickSummary, walletListSample] = await Promise.all([
+    env.FOMO_KV.get('idx:fee_vault:before'),
+    env.FOMO_KV.get('meta:lastTickAt'),
+    env.FOMO_KV.get('meta:lastTickSummary', { type: 'json' }),
+    env.FOMO_KV.list({ prefix: 'wallet:', limit: 1000 }),
+  ]);
+
+  return {
+    ok: true,
+    service: 'fomoholdersapi',
+    stats: {
+      walletIndexSampleCount: walletListSample.keys.length,
+      walletIndexHasMore: !walletListSample.list_complete,
+      hasCursor: !!cursor,
+      lastTickAt: lastTickAtRaw ? Number(lastTickAtRaw) : null,
+      lastTickSummary: lastTickSummary || null,
+    },
   };
 }
 
