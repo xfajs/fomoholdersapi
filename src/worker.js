@@ -8,14 +8,22 @@ export default {
 
     // Optional manual trigger for debugging.
     if (url.pathname === '/indexer/tick' && request.method === 'POST') {
-      const out = await runIndexerTick(env, Number(url.searchParams.get('limit') || 50));
-      return json(out);
+      try {
+        const out = await runIndexerTick(env, Number(url.searchParams.get('limit') || 50));
+        return json(out);
+      } catch (err) {
+        return json({ ok: false, where: 'indexer_tick', error: String(err?.message || err) }, 500);
+      }
     }
 
     if (url.pathname.startsWith('/query/') && request.method === 'GET') {
-      const mint = url.pathname.split('/').pop();
-      const out = await queryFomoHoldersPct(env, mint);
-      return json(out);
+      try {
+        const mint = url.pathname.split('/').pop();
+        const out = await queryFomoHoldersPct(env, mint);
+        return json(out);
+      } catch (err) {
+        return json({ ok: false, where: 'query', error: String(err?.message || err) }, 500);
+      }
     }
 
     return json({ error: 'not_found' }, 404);
@@ -23,7 +31,11 @@ export default {
 
   async scheduled(event, env, ctx) {
     // Runs from Cloudflare Cron Triggers.
-    ctx.waitUntil(runIndexerTick(env, 50));
+    ctx.waitUntil(
+      runIndexerTick(env, 50).catch((err) => {
+        console.error('scheduled indexer tick failed:', err?.message || err);
+      }),
+    );
   },
 };
 
