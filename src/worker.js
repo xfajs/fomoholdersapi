@@ -40,6 +40,7 @@ export default {
 };
 
 const FEE_VAULT = 'R4rNJHaffSUotNmqSKNEfDcJE8A7zJUkaoM5Jkd7cYX';
+const FEE_TOKEN_ACCOUNT = 'HrTf9CzXR1dRH4Sof5QrpmGWwpwAf3qZzwCsEjQpXcSq';
 
 async function runIndexerTick(env, limit = 50) {
   // Reads signatures that touched the fee vault and stores probable sender wallets in KV.
@@ -66,14 +67,15 @@ async function runIndexerTick(env, limit = 50) {
   const parsedTxs = await heliusBatchParse(signatures);
 
   for (const tx of parsedTxs) {
-    const maybeSigner =
-      tx?.feePayer ||
-      tx?.signer ||
-      tx?.signers?.[0] ||
-      tx?.transaction?.signatures?.[0] ||
-      null;
+    const transfers = tx?.tokenTransfers || [];
 
-    if (typeof maybeSigner === 'string') wallets.add(maybeSigner);
+    // Strict fee-vault fingerprint: sender wallet that paid into the FOMO fee vault.
+    for (const tr of transfers) {
+      const goesToFeeVault = tr?.toUserAccount === FEE_VAULT || tr?.toTokenAccount === FEE_TOKEN_ACCOUNT;
+      if (goesToFeeVault && typeof tr?.fromUserAccount === 'string') {
+        wallets.add(tr.fromUserAccount);
+      }
+    }
   }
 
   // Write discovered wallets to KV as key-only flags.
