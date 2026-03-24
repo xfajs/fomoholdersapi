@@ -1,31 +1,10 @@
-# fomoholdersapi
+# FOMO Holders API
 
-Indexer + query worker for FOMO-holder percentage.
+Backend worker that indexes wallets paying FOMO fees and exposes query endpoints.
 
-You said manual GitHub/dashboard deploy (no Wrangler), so this repo is just plain Worker code + docs.
+What it does:
+- Continuously indexes FOMO wallets into KV from fee-vault transaction flow.
+- Returns FOMO wallet concentration for a token (`/query/:mint`).
+- Returns simple wallet membership check (`/query/wallet/:wallet`).
 
-## Files
-
-- `src/worker.js` — Worker entry
-- `docs/DEPLOY.md` — manual Cloudflare dashboard setup
-- `docs/API.md` — endpoints
-
-## What it does (v1)
-
-1. Indexer tick (`POST /indexer/tick`)
-   - scans signatures on the FOMO fee token account (`HrTf...`)
-   - batch parses signatures through Helius `/v0/transactions`
-   - extracts sender wallets from USDC transfers into `HrTf...`
-   - stores `wallet:<address>=1` in KV
-
-2. Query (`GET /query/:mint`)
-   - fetches token top holders
-   - resolves holder owner wallets
-   - intersects with indexed FOMO wallet set in KV
-   - returns `% of top holders held by FOMO wallets`
-
-## Notes
-
-- This is conservative by design (index warmth matters).
-- Cache TTL for query results is currently 60s.
-- You can trigger `/indexer/tick` from a cron job or external scheduler.
+This service powers the FOMO Holders frontend.
