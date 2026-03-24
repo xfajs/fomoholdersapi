@@ -60,16 +60,20 @@ async function runIndexerTick(env, limit = 50) {
   }
 
   const wallets = new Set();
+  const signatures = sigs.map((s) => s.signature).filter(Boolean);
 
-  for (const s of sigs) {
-    const tx = await rpc(env, 'getTransaction', [s.signature, { encoding: 'jsonParsed', maxSupportedTransactionVersion: 0 }]);
-    if (!tx?.transaction?.message) continue;
+  // Batch parse signatures via Helius Enhanced Transactions API (far fewer calls than per-signature getTransaction).
+  const parsedTxs = await heliusBatchParse(signatures);
 
-    // Heuristic: first signer / fee payer is usually index 0 in account keys.
-    const accountKeys = tx.transaction.message.accountKeys || [];
-    const maybeSigner = accountKeys.find((k) => k?.signer)?.pubkey || accountKeys[0]?.pubkey || accountKeys[0];
+  for (const tx of parsedTxs) {
+    const maybeSigner =
+      tx?.feePayer ||
+      tx?.signer ||
+      tx?.signers?.[0] ||
+      tx?.transaction?.signatures?.[0] ||
+      null;
+
     if (typeof maybeSigner === 'string') wallets.add(maybeSigner);
-
   }
 
   // Write discovered wallets to KV as key-only flags.
@@ -174,6 +178,29 @@ async function rpc(env, method, params) {
   const data = await res.json();
   if (data.error) throw new Error(`RPC ${method} error: ${JSON.stringify(data.error)}`);
   return data.result;
+}
+
+async function heliusBatchParse(signatures) {
+  if (!signatures?.length) return [];
+
+  const endpoint = 'https://api.helius.xyz/v0/transactions/?api-key=ce8a535b-6103-49eb-9fb5-be190271d183';
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ transactions: signatures }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`HELIUS_PARSE HTTP ${res.status}: ${text}`);
+  }
+
+  const data = await res.json();
+  if (!Array.isArray(data)) {
+    throw new Error(`HELIUS_PARSE unexpected response: ${JSON.stringify(data).slice(0, 500)}`);
+  }
+
+  return data;
 }
 
 function json(obj, status = 200) {

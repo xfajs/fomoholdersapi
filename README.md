@@ -14,7 +14,8 @@ You said manual GitHub/dashboard deploy (no Wrangler), so this repo is just plai
 
 1. Indexer tick (`POST /indexer/tick`)
    - scans signatures for fee vault transfers
-   - extracts probable sender wallets
+   - batch parses signatures through Helius `/v0/transactions`
+   - extracts probable sender/fee-payer wallets
    - stores `wallet:<address>=1` in KV
 
 2. Query (`GET /query/:mint`)
