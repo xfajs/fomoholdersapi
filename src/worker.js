@@ -167,12 +167,40 @@ async function queryHistory(env, mint) {
 
 async function queryTokenInfo(mint) {
   if (!mint) return { ok: false, error: 'missing_mint' };
-  const res = await fetch(`https://frontend-api-v3.pump.fun/coins/${mint}`);
+
+  const res = await fetch(`https://api.dexscreener.com/tokens/v1/solana/${mint}`);
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`pump token info ${res.status}: ${text}`);
+    throw new Error(`dexscreener token info ${res.status}: ${text}`);
   }
-  const data = await res.json();
+
+  const rows = await res.json();
+  if (!Array.isArray(rows) || rows.length === 0) {
+    return { ok: true, mint, data: null };
+  }
+
+  // Pick strongest pool by liquidity first, then 24h volume fallback.
+  const best = [...rows].sort((a, b) => {
+    const liqA = Number(a?.liquidity?.usd || 0);
+    const liqB = Number(b?.liquidity?.usd || 0);
+    if (liqB !== liqA) return liqB - liqA;
+    const volA = Number(a?.volume?.h24 || 0);
+    const volB = Number(b?.volume?.h24 || 0);
+    return volB - volA;
+  })[0];
+
+  const data = {
+    name: best?.baseToken?.name || null,
+    symbol: best?.baseToken?.symbol || null,
+    priceUsd: best?.priceUsd != null ? Number(best.priceUsd) : null,
+    marketCap: best?.marketCap != null ? Number(best.marketCap) : null,
+    liquidityUsd: best?.liquidity?.usd != null ? Number(best.liquidity.usd) : null,
+    fdv: best?.fdv != null ? Number(best.fdv) : null,
+    pairAddress: best?.pairAddress || null,
+    dexId: best?.dexId || null,
+    url: best?.url || null,
+  };
+
   return { ok: true, mint, data };
 }
 
