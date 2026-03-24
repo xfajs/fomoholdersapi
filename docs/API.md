@@ -21,6 +21,20 @@ Response example:
 }
 ```
 
+## GET /query/wallet/:wallet
+
+Returns whether this wallet is currently in the indexed FOMO set.
+
+Response example:
+```json
+{
+  "ok": true,
+  "wallet": "9x...",
+  "isFomoWallet": true,
+  "updatedAt": 1710000000000
+}
+```
+
 ## GET /query/:mint
 
 Returns FOMO wallet concentration estimate based on top holders.

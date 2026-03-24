@@ -16,6 +16,16 @@ export default {
       }
     }
 
+    if (url.pathname.startsWith('/query/wallet/') && request.method === 'GET') {
+      try {
+        const wallet = url.pathname.split('/').pop();
+        const out = await queryIsFomoWallet(env, wallet);
+        return json(out);
+      } catch (err) {
+        return json({ ok: false, where: 'query_wallet', error: String(err?.message || err) }, 500);
+      }
+    }
+
     if (url.pathname.startsWith('/query/') && request.method === 'GET') {
       try {
         const mint = url.pathname.split('/').pop();
@@ -94,6 +104,18 @@ async function runIndexerTick(env, limit = 50) {
     indexed: sigs.length,
     walletsAdded: wallets.size,
     cursor: oldestSig || null,
+  };
+}
+
+async function queryIsFomoWallet(env, wallet) {
+  if (!wallet) return { ok: false, error: 'missing_wallet' };
+
+  const exists = await env.FOMO_KV.get(`wallet:${wallet}`);
+  return {
+    ok: true,
+    wallet,
+    isFomoWallet: !!exists,
+    updatedAt: Date.now(),
   };
 }
 
