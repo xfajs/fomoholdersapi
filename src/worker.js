@@ -139,19 +139,31 @@ async function runIndexerTick(env, limit = 50) {
 }
 
 async function health(env) {
-  const [cursor, lastTickAtRaw, lastTickSummary, walletListSample] = await Promise.all([
+  const [cursor, lastTickAtRaw, lastTickSummary] = await Promise.all([
     env.FOMO_KV.get('idx:fee_vault:before'),
     env.FOMO_KV.get('meta:lastTickAt'),
     env.FOMO_KV.get('meta:lastTickSummary', { type: 'json' }),
-    env.FOMO_KV.list({ prefix: 'wallet:', limit: 1000 }),
   ]);
+
+  // Exact wallet key count (paginated KV list).
+  let walletCount = 0;
+  let listCursor = undefined;
+  let pages = 0;
+  while (true) {
+    pages += 1;
+    const page = await env.FOMO_KV.list({ prefix: 'wallet:', limit: 1000, cursor: listCursor });
+    walletCount += page.keys.length;
+    if (page.list_complete) break;
+    listCursor = page.cursor;
+    if (pages > 5000) break; // safety guard
+  }
 
   return {
     ok: true,
     service: 'fomoholdersapi',
     stats: {
-      walletIndexSampleCount: walletListSample.keys.length,
-      walletIndexHasMore: !walletListSample.list_complete,
+      walletIndexCount: walletCount,
+      walletCountPagesScanned: pages,
       hasCursor: !!cursor,
       lastTickAt: lastTickAtRaw ? Number(lastTickAtRaw) : null,
       lastTickSummary: lastTickSummary || null,
